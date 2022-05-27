@@ -1,24 +1,24 @@
 package com.example.appplaymusic;
 
-import androidx.appcompat.app.AppCompatActivity;
-import androidx.core.app.NotificationCompat;
 
-import android.annotation.SuppressLint;
 import android.app.Notification;
 import android.app.NotificationManager;
 import android.content.Context;
+import android.content.Intent;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.media.MediaPlayer;
+import android.net.Uri;
 import android.os.Bundle;
 import android.os.Handler;
 import android.view.View;
-import android.view.animation.Animation;
-import android.view.animation.AnimationUtils;
 import android.view.animation.LinearInterpolator;
 import android.widget.ImageView;
 import android.widget.SeekBar;
 import android.widget.TextView;
+
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.NotificationCompat;
 
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -36,6 +36,7 @@ public class MainActivity extends AppCompatActivity {
     ImageView imageViewMusic;
 
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         setTitle("Nhớ người yêu");
@@ -44,23 +45,17 @@ public class MainActivity extends AppCompatActivity {
         initView();
         initEven();
         addSong();
-        KhoiTaoMediaPlayer();
+        CreateMediaPlayer();
         updateTime();
         startAnimation();
         stopAnimation();
-
-//        if(mediaPlayer.getDuration()==mediaPlayer.getCurrentPosition()){
-//            imageButtonPlay.setImageResource(R.drawable.play);
-//        }
-
-
     }
-
     private void stopAnimation() {//dừng hiệu ứng
         imageViewMusic.animate().cancel();
     }
 
     private void startAnimation() {//hiệu ứng quanh đĩa
+
         Runnable runnable = new Runnable() {
             @Override
             public void run() {
@@ -92,9 +87,9 @@ public class MainActivity extends AppCompatActivity {
                         if (mediaPlayer.isPlaying()) {
                             mediaPlayer.stop();
                         }
-                        KhoiTaoMediaPlayer();
+                        CreateMediaPlayer();
                         mediaPlayer.start();
-                        imageButtonPlay.setImageResource(R.drawable.pause);
+                        imageButtonPlay.setImageResource(R.drawable.ic_pause);
                         skSong.setProgress(0);
                         startAnimation();
 
@@ -106,7 +101,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private void KhoiTaoMediaPlayer() {//khởi tạo 1 mediaPlayer với vị trí bài hát thứ position trong songList
+    private void CreateMediaPlayer() {//khởi tạo 1 mediaPlayer với vị trí bài hát thứ position trong songList
         mediaPlayer = MediaPlayer.create(MainActivity.this, songList.get(position).getIdBai());
         tv_ten_bai.setText(songList.get(position).getTenBai());
         setTimeTotal();
@@ -143,13 +138,14 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 if (mediaPlayer.isPlaying()) {//nếu đang hát->pause-> đổi hình nút pause
                     mediaPlayer.pause();
-                    imageButtonPlay.setImageResource(R.drawable.play);
+                    imageButtonPlay.setImageResource(R.drawable.ic_play);
                     stopAnimation();
 
                 } else {// nếu đang dừng hát
                     mediaPlayer.start();
-                    imageButtonPlay.setImageResource(R.drawable.pause);
+                    imageButtonPlay.setImageResource(R.drawable.ic_pause);
                     startAnimation();
+                    btnStartService();
                 }
                 //imageViewMusic.startAnimation(animRotate);
             }
@@ -159,10 +155,11 @@ public class MainActivity extends AppCompatActivity {
             public void onClick(View v) {
                 mediaPlayer.stop();
                 mediaPlayer.release();
-                imageButtonPlay.setImageResource(R.drawable.play);
-                KhoiTaoMediaPlayer();
+                imageButtonPlay.setImageResource(R.drawable.ic_play);
+                CreateMediaPlayer();
                 skSong.setProgress(0);
                 stopAnimation();
+
             }
         });
         imageButtonNext.setOnClickListener(new View.OnClickListener() {
@@ -175,11 +172,12 @@ public class MainActivity extends AppCompatActivity {
                 if (mediaPlayer.isPlaying()) {
                     mediaPlayer.stop();
                 }
-                KhoiTaoMediaPlayer();
-                mediaPlayer.start();
-                imageButtonPlay.setImageResource(R.drawable.pause);
+                CreateMediaPlayer();
+                imageButtonPlay.setImageResource(R.drawable.ic_pause);
                 skSong.setProgress(0);
                 startAnimation();
+                mediaPlayer.start();
+                btnStartService();
 
             }
         });
@@ -193,11 +191,12 @@ public class MainActivity extends AppCompatActivity {
                 if (mediaPlayer.isPlaying()) {
                     mediaPlayer.stop();
                 }
-                KhoiTaoMediaPlayer();
-                mediaPlayer.start();
-                imageButtonPlay.setImageResource(R.drawable.pause);
+                CreateMediaPlayer();
+                imageButtonPlay.setImageResource(R.drawable.ic_pause);
                 skSong.setProgress(0);
+                mediaPlayer.start();
                 startAnimation();
+                btnStartService();
 
             }
         });
@@ -205,14 +204,10 @@ public class MainActivity extends AppCompatActivity {
             //tác động nên Seek Bar
             @Override
             public void onProgressChanged(SeekBar seekBar, int progress, boolean fromUser) {
-
             }
-
             @Override
             public void onStartTrackingTouch(SeekBar seekBar) {
-
             }
-
             @Override
             public void onStopTrackingTouch(SeekBar seekBar) {
                 mediaPlayer.seekTo(skSong.getProgress());
@@ -226,23 +221,33 @@ public class MainActivity extends AppCompatActivity {
                 if (mediaPlayer.isPlaying()) {
                     mediaPlayer.stop();
                 }
-                KhoiTaoMediaPlayer();
+                CreateMediaPlayer();
                 mediaPlayer.start();
-                imageButtonPlay.setImageResource(R.drawable.pause);
+                imageButtonPlay.setImageResource(R.drawable.ic_pause);
                 skSong.setProgress(0);
                 startAnimation();
             }
         });
     }
 
+    private void btnStartService() {
+        Intent intent = new Intent(this,MusicService.class);
+        Bundle bundle = new Bundle();
+        bundle.putSerializable("key",songList.get(position));
+        intent.putExtras(bundle);
+        startService(intent);
+    }
+
     private void sendNotification() {
         Bitmap bitmap = BitmapFactory.decodeResource(getResources(), R.drawable.icon_miss);
+        Uri sound = Uri.parse("android.resource://"+ getPackageName() + "/" + R.raw.jingle_bells_sms_523);
 
         Notification notification = new NotificationCompat.Builder(this,MyApplication.CHANNEL_ID)
                 .setContentTitle("Vợ nhớ ck rồi phải không?")
                 .setContentText("Nhớ thì mau nên với ck đi nhé")
                 .setSmallIcon(R.drawable.hearticon)
                 .setLargeIcon(bitmap)
+                .setSound(sound)
                 .setColor(getResources().getColor(R.color.design_default_color_error))
                 .build();
 
