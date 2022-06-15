@@ -6,7 +6,7 @@ public class Song implements Serializable {
     private int idBai;
     private String tenBai;
 
-    public Song( String tenBai,int idBai) {
+    public Song(String tenBai, int idBai) {
         this.idBai = idBai;
         this.tenBai = tenBai;
     }

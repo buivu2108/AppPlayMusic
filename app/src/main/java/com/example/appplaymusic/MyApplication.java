@@ -22,36 +22,30 @@ public class MyApplication extends Application {
     }
 
     private void createNotificationChannel2() {
-        Uri sound = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.jingle_bells_sms_523);
         AudioAttributes audioAttributes = new AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_NOTIFICATION)
                 .build();
         NotificationChannel channel1 = new NotificationChannel(CHANNEL_ID2, "PushNotification2",
                 NotificationManager.IMPORTANCE_HIGH);
-        channel1.setSound(sound, audioAttributes);
         NotificationManager manager = getSystemService(NotificationManager.class);
         manager.createNotificationChannel(channel1);
     }
 
     private void createNotificationChannel() {
-        Uri sound = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.jingle_bells_sms_523);
         AudioAttributes audioAttributes = new AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_NOTIFICATION)
                 .build();
         NotificationChannel channel2 = new NotificationChannel(CHANNEL_ID, "PushNotificationFireBase",
                 NotificationManager.IMPORTANCE_HIGH);
-        channel2.setSound(sound, audioAttributes);
         NotificationManager manager = getSystemService(NotificationManager.class);
         manager.createNotificationChannel(channel2);
     }
     private void createNotificationChannel3() {
-        Uri sound = Uri.parse("android.resource://" + getPackageName() + "/" + R.raw.jingle_bells_sms_523);
         AudioAttributes audioAttributes = new AudioAttributes.Builder()
                 .setUsage(AudioAttributes.USAGE_NOTIFICATION)
                 .build();
         NotificationChannel channel3 = new NotificationChannel(CHANNEL_ID3, "PushNotificationDriver",
                 NotificationManager.IMPORTANCE_HIGH);
-        channel3.setSound(sound, audioAttributes);
         NotificationManager manager = getSystemService(NotificationManager.class);
         manager.createNotificationChannel(channel3);
     }
