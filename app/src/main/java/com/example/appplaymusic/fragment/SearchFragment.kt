@@ -79,6 +79,7 @@ class SearchFragment : Fragment() {
             .subscribeOn(Schedulers.computation())
             .observeOn(AndroidSchedulers.mainThread())
             .subscribe({
+                binding.progressLoad.visibility = View.VISIBLE
                 searchViewModel.callApi(it)
             }, {
                 it.printStackTrace()
@@ -93,6 +94,9 @@ class SearchFragment : Fragment() {
             }
             actionShowCallApiFail.observe(viewLifecycleOwner) {
                 Toast.makeText(context, "Call Api Fail", Toast.LENGTH_LONG).show()
+            }
+            loadSuccessProgressBar.observe(viewLifecycleOwner){
+                binding.progressLoad.visibility = View.GONE
             }
         }
     }
