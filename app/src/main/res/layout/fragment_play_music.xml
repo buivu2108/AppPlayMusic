@@ -150,7 +150,7 @@
             android:layout_weight="1"
             android:orientation="horizontal">
 
-            <de.hdodenhof.circleimageview.CircleImageView
+            <ImageView
                 android:id="@+id/btnStop"
                 android:layout_width="0dp"
                 android:layout_height="50dp"

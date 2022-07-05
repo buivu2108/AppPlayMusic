@@ -51,7 +51,6 @@ public class MyFirebaseMessagingService extends FirebaseMessagingService {
                 .setSound(null)
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(strMessage))
                 .setSmallIcon(R.drawable.hearticon)
-                .setColor(getResources().getColor(R.color.design_default_color_error))
                 .setContentIntent(pendingIntent);
 
         Notification notification = notificationBuilder.build();

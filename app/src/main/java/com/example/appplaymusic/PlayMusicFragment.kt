@@ -1,6 +1,10 @@
 package com.example.appplaymusic
 
 import android.annotation.SuppressLint
+import android.content.BroadcastReceiver
+import android.content.Context
+import android.content.Intent
+import android.content.IntentFilter
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -10,28 +14,27 @@ import android.widget.SeekBar.OnSeekBarChangeListener
 import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
+import androidx.localbroadcastmanager.content.LocalBroadcastManager
 import com.example.appplaymusic.adapter.SongViewPagerAdapter
 import com.example.appplaymusic.databinding.FragmentPlayMusicBinding
 import com.example.appplaymusic.model.DataListMusic
-import com.example.appplaymusic.model.DataListMusicItem
-import com.google.android.exoplayer2.ExoPlayer
-import com.google.android.exoplayer2.MediaItem
-import com.google.android.exoplayer2.Player
-import io.reactivex.Observable
-import io.reactivex.android.schedulers.AndroidSchedulers
-import io.reactivex.disposables.Disposable
-import java.text.SimpleDateFormat
-import java.util.concurrent.TimeUnit
 
 
 class PlayMusicFragment : Fragment() {
     lateinit var binding: FragmentPlayMusicBinding
     lateinit var songList: DataListMusic
     private var position: Int = 0
-    private var player: ExoPlayer? = null
-    private var autoRefreshDisposable: Disposable? = null
     private val playMusicViewModel: PlayMusicViewModel by viewModels()
     private lateinit var songViewPagerAdapter: SongViewPagerAdapter
+    private var ACTION_PAUSE: Int = 1
+    private var ACTION_PlAY: Int = 2
+    private var ACTION_NEXT: Int = 3
+    private var ACTION_PREVIOUS: Int = 4
+    private var ACTION_CHOOSE: Int = 5
+    private var ACTION_SEEK_MUSIC: Int = 6
+    private var ACTION_SYNC_MUSIC: Int = 7
+    private var ACTION_RANDOM_MUSIC: Int = 8
+    private var isPlayingMusic: Boolean = false
 
     companion object {
         fun newInstance(dataListMusic: DataListMusic, position: Int): PlayMusicFragment {
@@ -44,25 +47,6 @@ class PlayMusicFragment : Fragment() {
         }
     }
 
-    private fun initializePlayer() {
-        player = ExoPlayer.Builder(requireContext())
-            .build()
-            .also {
-                it.playWhenReady = true
-                it.addListener(object : Player.Listener {
-                    override fun onPlaybackStateChanged(playbackState: Int) {
-                        if (playbackState == Player.STATE_ENDED) {
-                            playMusicViewModel.nextSong(position,songList.size)
-                        } else if (playbackState == Player.STATE_READY) {
-                            setTimeTotal()
-                            playMusicViewModel.startPlay()
-                        }
-                    }
-                })
-            }
-    }
-
-
     override fun onCreateView(
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
@@ -73,22 +57,66 @@ class PlayMusicFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        initializePlayer()
         initView()
         initEvent()
         initViewModels()
+        LocalBroadcastManager.getInstance(requireActivity())
+            .registerReceiver(object : BroadcastReceiver() {
+                override fun onReceive(context: Context, intent: Intent) {
+                    val timeKt = intent.getStringExtra("timeKt")
+                    val seekBarSongProgress = intent.getIntExtra("seekBarSongProgress", 0)
+                    setTimeTotal(timeKt ?: "", seekBarSongProgress)
+                    playMusicViewModel.startPlay()
+                }
+            }, IntentFilter("setTimeTotal"))
+        LocalBroadcastManager.getInstance(requireActivity())
+            .registerReceiver(object : BroadcastReceiver() {
+                override fun onReceive(context: Context, intent: Intent) {
+                    val timeUpdate = intent.getStringExtra("timeUpdate")
+                    val seekBarProgressUpdate = intent.getIntExtra("seekBarProgressUpdate", 0)
+                    isPlayingMusic = intent.getBooleanExtra("isPlayingMusic", false)
+                    updateView(timeUpdate, seekBarProgressUpdate)
+                }
+            }, IntentFilter("upDateTime"))
+        LocalBroadcastManager.getInstance(requireActivity())
+            .registerReceiver(object : BroadcastReceiver() {
+                override fun onReceive(context: Context, intent: Intent) {
+                    playMusicViewModel.startPlay()
+                }
+            }, IntentFilter("playMusic"))
+        LocalBroadcastManager.getInstance(requireActivity())
+            .registerReceiver(object : BroadcastReceiver() {
+                override fun onReceive(context: Context, intent: Intent) {
+                    playMusicViewModel.stopPlay()
+                }
+            }, IntentFilter("pauseMusic"))
+    }
+
+    @SuppressLint("SimpleDateFormat")
+    private fun updateView(timeUpdate: String?, seekBarProgressUpdate: Int) {
+        binding.timeBd.text = timeUpdate
+        binding.seekBarSong.progress = seekBarProgressUpdate
+        binding.tvNameSong.text = songList[position].tenBaiHat
+    }
+
+    @SuppressLint("SimpleDateFormat")
+    private fun setTimeTotal(
+        timeKt: String,
+        seekBarSongProgress: Int
+    ) { //dùng để gán progress max của seekbar bằng tgian bài hát Duration.
+        binding.timeKt.text = timeKt
+        binding.seekBarSong.max = seekBarSongProgress
     }
 
     private fun initViewModels() {
         playMusicViewModel.apply {
             isPlaying.observe(viewLifecycleOwner) {
                 if (it) {
-                    player?.play()
+                    sendActionService(ACTION_PlAY, position)
                     binding.btnStop.setImageResource(R.drawable.ic_pause)
                 } else {
-                    player?.pause()
+                    sendActionService(ACTION_PAUSE, position)
                     binding.btnStop.setImageResource(R.drawable.ic_play)
-                    btnStartService(songList[position])
                 }
             }
             positionSong.observe(viewLifecycleOwner) {
@@ -103,14 +131,12 @@ class PlayMusicFragment : Fragment() {
                         it
                     }
                 }
-                if (player?.isPlaying == true) {
-                    player?.stop()
+                if (isPlayingMusic) {
+                    sendActionService(ACTION_PAUSE, position)
                 }
-                createExoPlayerMusic()
                 binding.btnStop.setImageResource(R.drawable.ic_pause)
                 binding.seekBarSong.progress = 0
-                player?.play()
-                btnStartService(songList[position])
+                sendActionService(ACTION_PlAY, position)
             }
             actionShowCallApiFail.observe(viewLifecycleOwner) {
                 Toast.makeText(context, "Call Api Fail", Toast.LENGTH_LONG).show()
@@ -132,50 +158,37 @@ class PlayMusicFragment : Fragment() {
         }
     }
 
-
-    private fun updateTime() {
-        autoRefreshDisposable?.dispose()
-        autoRefreshDisposable =
-            Observable.interval(500, TimeUnit.MILLISECONDS)
-                .observeOn(AndroidSchedulers.mainThread())
-                .subscribe({
-                    updateView()
-                }, {
-                })
+    private fun btnStartService(data: DataListMusic, position: Int) {
+        val intent = Intent(requireActivity(), MusicService::class.java)
+        val bundle = Bundle()
+        bundle.putSerializable("dataMusicListSong", data)
+        bundle.putInt("positionMusic", position)
+        intent.putExtras(bundle)
+        requireActivity().startService(intent)
     }
 
-    @SuppressLint("SimpleDateFormat")
-    private fun updateView() {
-        val dateFormat = SimpleDateFormat("mm:ss")
-        binding.timeBd.text = dateFormat.format(player?.currentPosition!!)
-        binding.seekBarSong.progress = (player?.currentPosition?.toInt()!!) / 1000
-
-    }
-
-    private fun createExoPlayerMusic() { //khởi tạo 1 mediaPlayer với vị trí bài hát thứ position trong songList
-        val url = songList[position].linkBaiHat.toString()
-        player?.setMediaItem(MediaItem.fromUri(url))
-        player?.prepare()
-        binding.tvNameSong.text = songList[position].tenBaiHat
+    private fun sendActionService(actionMusic: Int, position: Int) {
+        val intentService = Intent(context, MusicService::class.java)
+        intentService.putExtra("action_music_service", actionMusic)
+        intentService.putExtra("positionSongMusic", position)
+        context?.startService(intentService)
     }
 
     fun changeSong(positionChange: Int) {
         position = positionChange
 
         playMusicViewModel.changeSong(positionChange)
-        if (player?.isPlaying == true) {
-            player?.stop()
+        if (isPlayingMusic) {
+            sendActionService(ACTION_PAUSE, position)
         }
-        createExoPlayerMusic()
         binding.btnStop.setImageResource(R.drawable.ic_pause)
         binding.seekBarSong.progress = 0
-        player?.play()
-        btnStartService(songList[position])
+        sendActionService(ACTION_CHOOSE, positionChange)
     }
 
     private fun initEvent() {
         binding.btnStop.setOnClickListener {
-            if (player?.isPlaying == true) { //nếu đang hát->pause-> đổi hình nút pause
+            if (isPlayingMusic) {
                 playMusicViewModel.stopPlay()
             } else { // nếu đang dừng hát
                 playMusicViewModel.startPlay()
@@ -184,10 +197,12 @@ class PlayMusicFragment : Fragment() {
         binding.btnNext.setOnClickListener {
             playMusicViewModel.stopPlay()
             playMusicViewModel.nextSong(position, songList.size)
+            sendActionService(ACTION_NEXT, position)
         }
         binding.btnPrevious.setOnClickListener {
             playMusicViewModel.stopPlay()
             playMusicViewModel.previousSong(position, songList.size)
+            sendActionService(ACTION_PREVIOUS, position)
         }
         binding.seekBarSong.setOnSeekBarChangeListener(object : OnSeekBarChangeListener {
             override fun onProgressChanged(
@@ -199,17 +214,19 @@ class PlayMusicFragment : Fragment() {
 
             override fun onStartTrackingTouch(seekBar: SeekBar) {}
             override fun onStopTrackingTouch(seekBar: SeekBar) {
-                player?.seekTo(binding.seekBarSong.progress.toLong() * 1000)
+                sendActionService(
+                    ACTION_SEEK_MUSIC,
+                    (binding.seekBarSong.progress.toLong() * 1000).toInt()
+                )
             }
         })
         binding.imgMiss.setOnClickListener {
             sendNotification()
             position = songList.size - 1 //chuyen den bai hat muon phat
-            if (player?.isPlaying == true) {
-                player?.stop()
+            if (isPlayingMusic) {
+                sendActionService(ACTION_PAUSE, position)
             }
-            createExoPlayerMusic()
-            player?.play()
+            sendActionService(ACTION_PlAY, position)
             binding.btnStop.setImageResource(R.drawable.ic_pause)
             binding.seekBarSong.progress = 0
         }
@@ -219,42 +236,23 @@ class PlayMusicFragment : Fragment() {
         binding.tvNameSong.setOnClickListener { return@setOnClickListener }
         binding.btnSync.setOnClickListener {
             playMusicViewModel.syncMusic()
+            sendActionService(ACTION_SYNC_MUSIC, position)
         }
         binding.btnRandomMusic.setOnClickListener {
             playMusicViewModel.randomMusic()
         }
 
     }
-
-    private fun btnStartService(dataListMusicItem: DataListMusicItem) {
-        (activity as MainActivity).btnStartService(dataListMusicItem)
-    }
-
     private fun sendNotification() {
         (activity as MainActivity).sendNotification()
     }
-
-    @SuppressLint("SimpleDateFormat")
-    private fun setTimeTotal() { //dùng để gán progress max của seekbar bằng tgian bài hát Duration.
-        val dateFormat = SimpleDateFormat("mm:ss")
-        binding.timeKt.text = dateFormat.format(player?.duration ?: 0)
-        binding.seekBarSong.max = (player?.duration?.toInt() ?: 0) / 1000
-    }
-
     private fun initView() {
         songList = requireArguments().getSerializable("dataListMusic") as DataListMusic
         position = requireArguments().getInt("position")
         songViewPagerAdapter = SongViewPagerAdapter(this)
         songViewPagerAdapter.addSongList(songList, position)
         binding.viewPageSong.adapter = songViewPagerAdapter
-
-        createExoPlayerMusic()
-        updateTime()
+        btnStartService(songList, position)
     }
 
-    override fun onDestroyView() {
-        super.onDestroyView()
-        player?.release()
-        player = null
-    }
 }

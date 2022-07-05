@@ -10,6 +10,7 @@ import androidx.core.app.NotificationCompat
 import androidx.viewpager2.widget.ViewPager2
 import com.example.appplaymusic.adapter.MainViewPagerAdapter
 import com.example.appplaymusic.databinding.ActivityMainBinding
+import com.example.appplaymusic.model.DataListMusic
 import com.example.appplaymusic.model.DataListMusicItem
 import com.google.android.material.tabs.TabLayout
 import com.google.android.material.tabs.TabLayoutMediator
@@ -30,15 +31,6 @@ class MainActivity : AppCompatActivity() {
     private fun initEven() {
 
     }
-
-    fun btnStartService(data: DataListMusicItem) {
-        val intent = Intent(this, MusicService::class.java)
-        val bundle = Bundle()
-        bundle.putSerializable("dataListMusicItem", data)
-        intent.putExtras(bundle)
-        startService(intent)
-    }
-
     fun sendNotification() {
         val bitmap = BitmapFactory.decodeResource(resources, R.drawable.icon_miss)
         val notification = NotificationCompat.Builder(this, MyApplication.CHANNEL_ID)
@@ -46,7 +38,6 @@ class MainActivity : AppCompatActivity() {
             .setContentText("Nhớ thì mau nên với ck đi nhé")
             .setSmallIcon(R.drawable.hearticon)
             .setLargeIcon(bitmap)
-            .setColor(resources.getColor(R.color.design_default_color_error))
             .build()
         val notificationManager = getSystemService(NOTIFICATION_SERVICE) as NotificationManager
         notificationManager.notify(notificationId, notification)
