@@ -21,12 +21,6 @@ class PlayMusicViewModel : ViewModel() {
     val isPlaying: LiveData<Boolean>
         get() = _isPlaying
 
-    val isSyncMusic: LiveData<Boolean>
-        get() = _isSyncMusic
-
-    val isRandomMusic: LiveData<Boolean>
-        get() = _isRandomMusic
-
     private val _actionShowCallApiFail = LiveEvent<Unit>()
     val actionShowCallApiFail: LiveData<Unit>
         get() = _actionShowCallApiFail
@@ -72,15 +66,6 @@ class PlayMusicViewModel : ViewModel() {
             _positionSong.value = thisPosition ?: 0
         }
     }
-
-    fun syncMusic() {
-        _isSyncMusic.value = !_isSyncMusic.value!!
-    }
-
-    fun randomMusic() {
-        _isRandomMusic.value = !_isRandomMusic.value!!
-    }
-
     fun changeSong(positionChange: Int) {
         _positionSong.value = positionChange
     }

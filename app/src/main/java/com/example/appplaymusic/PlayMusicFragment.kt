@@ -1,22 +1,19 @@
 package com.example.appplaymusic
 
+import android.R
 import android.annotation.SuppressLint
+import android.media.MediaPlayer
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.widget.SeekBar
 import android.widget.SeekBar.OnSeekBarChangeListener
-import android.widget.Toast
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import com.example.appplaymusic.adapter.SongViewPagerAdapter
 import com.example.appplaymusic.databinding.FragmentPlayMusicBinding
 import com.example.appplaymusic.model.DataListMusic
-import com.example.appplaymusic.model.DataListMusicItem
-import com.google.android.exoplayer2.ExoPlayer
-import com.google.android.exoplayer2.MediaItem
-import com.google.android.exoplayer2.Player
 import io.reactivex.Observable
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.Disposable
@@ -28,7 +25,7 @@ class PlayMusicFragment : Fragment() {
     lateinit var binding: FragmentPlayMusicBinding
     lateinit var songList: DataListMusic
     private var position: Int = 0
-    private var player: ExoPlayer? = null
+    private var player: MediaPlayer? = null
     private var autoRefreshDisposable: Disposable? = null
     private val playMusicViewModel: PlayMusicViewModel by viewModels()
     private lateinit var songViewPagerAdapter: SongViewPagerAdapter
@@ -45,21 +42,9 @@ class PlayMusicFragment : Fragment() {
     }
 
     private fun initializePlayer() {
-        player = ExoPlayer.Builder(requireContext())
-            .build()
-            .also {
-                it.playWhenReady = true
-                it.addListener(object : Player.Listener {
-                    override fun onPlaybackStateChanged(playbackState: Int) {
-                        if (playbackState == Player.STATE_ENDED) {
-                            playMusicViewModel.nextSong(position,songList.size)
-                        } else if (playbackState == Player.STATE_READY) {
-                            setTimeTotal()
-                            playMusicViewModel.startPlay()
-                        }
-                    }
-                })
-            }
+        player = MediaPlayer.create(requireContext(), songList[position].linkBaiHat)
+        player?.start()
+        setTimeTotal()
     }
 
 
@@ -73,8 +58,8 @@ class PlayMusicFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        initializePlayer()
         initView()
+        initializePlayer()
         initEvent()
         initViewModels()
     }
@@ -83,12 +68,11 @@ class PlayMusicFragment : Fragment() {
         playMusicViewModel.apply {
             isPlaying.observe(viewLifecycleOwner) {
                 if (it) {
-                    player?.play()
-                    binding.btnStop.setImageResource(R.drawable.ic_pause)
+                    player?.start()
+                    binding.btnStop.setImageResource(R.drawable.ic_media_pause)
                 } else {
-                    player?.pause()
-                    binding.btnStop.setImageResource(R.drawable.ic_play)
-                    btnStartService(songList[position])
+                    player?.stop()
+                    binding.btnStop.setImageResource(R.drawable.ic_media_play)
                 }
             }
             positionSong.observe(viewLifecycleOwner) {
@@ -107,27 +91,9 @@ class PlayMusicFragment : Fragment() {
                     player?.stop()
                 }
                 createExoPlayerMusic()
-                binding.btnStop.setImageResource(R.drawable.ic_pause)
+                binding.btnStop.setImageResource(R.drawable.ic_media_pause)
                 binding.seekBarSong.progress = 0
-                player?.play()
-                btnStartService(songList[position])
-            }
-            actionShowCallApiFail.observe(viewLifecycleOwner) {
-                Toast.makeText(context, "Call Api Fail", Toast.LENGTH_LONG).show()
-            }
-            isSyncMusic.observe(viewLifecycleOwner) {
-                if (it) {
-                    binding.btnSync.setImageResource(R.drawable.sync_active)
-                } else {
-                    binding.btnSync.setImageResource(R.drawable.sync_deactive)
-                }
-            }
-            isRandomMusic.observe(viewLifecycleOwner) {
-                if (it) {
-                    binding.btnRandomMusic.setImageResource(R.drawable.ic_random_active)
-                } else {
-                    binding.btnRandomMusic.setImageResource(R.drawable.ic_random_deactive)
-                }
+                player?.start()
             }
         }
     }
@@ -153,9 +119,10 @@ class PlayMusicFragment : Fragment() {
     }
 
     private fun createExoPlayerMusic() { //khởi tạo 1 mediaPlayer với vị trí bài hát thứ position trong songList
-        val url = songList[position].linkBaiHat.toString()
-        player?.setMediaItem(MediaItem.fromUri(url))
-        player?.prepare()
+        player?.stop()
+        val url = songList[position].linkBaiHat
+        player = MediaPlayer.create(requireContext(), url)
+        player?.start()
         binding.tvNameSong.text = songList[position].tenBaiHat
     }
 
@@ -167,21 +134,23 @@ class PlayMusicFragment : Fragment() {
             player?.stop()
         }
         createExoPlayerMusic()
-        binding.btnStop.setImageResource(R.drawable.ic_pause)
+        binding.btnStop.setImageResource(R.drawable.ic_media_pause)
         binding.seekBarSong.progress = 0
-        player?.play()
-        btnStartService(songList[position])
+        player?.start()
     }
 
     private fun initEvent() {
         binding.btnStop.setOnClickListener {
             if (player?.isPlaying == true) { //nếu đang hát->pause-> đổi hình nút pause
                 playMusicViewModel.stopPlay()
+                player?.stop()
             } else { // nếu đang dừng hát
                 playMusicViewModel.startPlay()
+                player?.start()
             }
         }
         binding.btnNext.setOnClickListener {
+            player?.stop()
             playMusicViewModel.stopPlay()
             playMusicViewModel.nextSong(position, songList.size)
         }
@@ -199,39 +168,13 @@ class PlayMusicFragment : Fragment() {
 
             override fun onStartTrackingTouch(seekBar: SeekBar) {}
             override fun onStopTrackingTouch(seekBar: SeekBar) {
-                player?.seekTo(binding.seekBarSong.progress.toLong() * 1000)
+                player?.seekTo((binding.seekBarSong.progress.toLong() * 1000).toInt())
             }
         })
-        binding.imgMiss.setOnClickListener {
-            sendNotification()
-            position = songList.size - 1 //chuyen den bai hat muon phat
-            if (player?.isPlaying == true) {
-                player?.stop()
-            }
-            createExoPlayerMusic()
-            player?.play()
-            binding.btnStop.setImageResource(R.drawable.ic_pause)
-            binding.seekBarSong.progress = 0
-        }
         binding.btnBackListMusic.setOnClickListener {
             requireActivity().supportFragmentManager.popBackStack()
         }
         binding.tvNameSong.setOnClickListener { return@setOnClickListener }
-        binding.btnSync.setOnClickListener {
-            playMusicViewModel.syncMusic()
-        }
-        binding.btnRandomMusic.setOnClickListener {
-            playMusicViewModel.randomMusic()
-        }
-
-    }
-
-    private fun btnStartService(dataListMusicItem: DataListMusicItem) {
-        (activity as MainActivity).btnStartService(dataListMusicItem)
-    }
-
-    private fun sendNotification() {
-        (activity as MainActivity).sendNotification()
     }
 
     @SuppressLint("SimpleDateFormat")

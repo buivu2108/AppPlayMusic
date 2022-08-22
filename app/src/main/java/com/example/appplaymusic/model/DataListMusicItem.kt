@@ -6,15 +6,9 @@ import java.io.Serializable
 
 data class DataListMusicItem(
     @SerializedName("CaSi")
-    val caSi: String?,
-    @SerializedName("HinhBaiHat")
-    val hinhBaiHat: String?,
-    @SerializedName("IdBaiHat")
-    val idBaiHat: String?,
+    val caSi: String,
     @SerializedName("LinkBaiHat")
-    val linkBaiHat: String?,
-    @SerializedName("LuotThich")
-    val luotThich: String?,
+    val linkBaiHat: Int,
     @SerializedName("TenBaiHat")
-    val tenBaiHat: String?
+    val tenBaiHat: String
 ) : Serializable

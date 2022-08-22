@@ -53,8 +53,8 @@ class RoundDiscFragment : Fragment() {
         initViewModels()
         dataListMusic = requireArguments().getSerializable("dataMusicList") as DataListMusic
         mPosition = requireArguments().getInt("mPosition")
-        val imgWaitLoader = RequestOptions().placeholder(R.drawable.dia_music).centerCrop()
-        Glide.with(this).load(dataListMusic[mPosition?: 0].hinhBaiHat).apply(imgWaitLoader)
+        val imgWaitLoader = RequestOptions().placeholder(R.drawable.ic_audacity).centerCrop()
+        Glide.with(this).load(imgWaitLoader).apply(imgWaitLoader)
             .into(binding.imgRoundDisc)
     }
 
@@ -68,8 +68,8 @@ class RoundDiscFragment : Fragment() {
                 }
             }
             positionSong.observe(viewLifecycleOwner) {
-                val imgWaitLoader = RequestOptions().placeholder(R.drawable.dia_music).centerCrop()
-                Glide.with(requireContext()).load(dataListMusic[it].hinhBaiHat).apply(imgWaitLoader)
+                val imgWaitLoader = RequestOptions().placeholder(R.drawable.ic_audacity).centerCrop()
+                Glide.with(requireContext()).load(imgWaitLoader).apply(imgWaitLoader)
                     .into(binding.imgRoundDisc)
             }
         }

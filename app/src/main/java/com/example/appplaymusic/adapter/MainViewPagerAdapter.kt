@@ -4,7 +4,7 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.FragmentActivity
 import androidx.viewpager2.adapter.FragmentStateAdapter
 import com.example.appplaymusic.fragment.HomeFragment
-import com.example.appplaymusic.fragment.SearchFragment
+import com.example.appplaymusic.fragment.PurchaseFragment
 
 
 class MainViewPagerAdapter(fragmentActivity: FragmentActivity) :
@@ -20,7 +20,7 @@ class MainViewPagerAdapter(fragmentActivity: FragmentActivity) :
                 HomeFragment()
             }
             else -> {
-                SearchFragment()
+                PurchaseFragment()
             }
         }
     }
