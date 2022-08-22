@@ -24,7 +24,7 @@ class MainActivity : AppCompatActivity() {
     private fun initView() {
         viewPagerMusic = binding.viewPagerMusic
         tabMusic = binding.tabMusic
-        viewPagerMusic.offscreenPageLimit = 2
+        viewPagerMusic.offscreenPageLimit = 1
         viewPagerMusic.isUserInputEnabled = false
         val mainViewPagerAdapter = MainViewPagerAdapter(this)
         viewPagerMusic.adapter = mainViewPagerAdapter
@@ -35,7 +35,7 @@ class MainActivity : AppCompatActivity() {
                     tab.text = "HOME"
                 }
                 1 -> {
-                    tab.icon = getDrawable(R.drawable.hearticon)
+                    tab.icon = getDrawable(R.drawable.ic_purchase)
                     tab.text = "PURCHASE"
                 }
             }

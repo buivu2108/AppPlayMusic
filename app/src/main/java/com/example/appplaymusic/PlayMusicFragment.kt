@@ -1,6 +1,7 @@
 package com.example.appplaymusic
 
 import android.annotation.SuppressLint
+import android.media.MediaPlayer
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -68,10 +69,10 @@ class PlayMusicFragment : Fragment() {
             isPlaying.observe(viewLifecycleOwner) {
                 if (it) {
                     player?.start()
-                    binding.btnStop.setImageResource(R.drawable.ic_media_pause)
+                    binding.btnStop.setImageResource(R.drawable.ic_pause)
                 } else {
                     player?.stop()
-                    binding.btnStop.setImageResource(R.drawable.ic_media_play)
+                    binding.btnStop.setImageResource(R.drawable.ic_play)
                 }
             }
             positionSong.observe(viewLifecycleOwner) {
@@ -90,7 +91,7 @@ class PlayMusicFragment : Fragment() {
                     player?.stop()
                 }
                 createExoPlayerMusic()
-                binding.btnStop.setImageResource(R.drawable.ic_media_pause)
+                binding.btnStop.setImageResource(R.drawable.ic_pause)
                 binding.seekBarSong.progress = 0
                 player?.start()
             }
@@ -133,7 +134,7 @@ class PlayMusicFragment : Fragment() {
             player?.stop()
         }
         createExoPlayerMusic()
-        binding.btnStop.setImageResource(R.drawable.ic_media_pause)
+        binding.btnStop.setImageResource(R.drawable.ic_pause)
         binding.seekBarSong.progress = 0
         player?.start()
     }
